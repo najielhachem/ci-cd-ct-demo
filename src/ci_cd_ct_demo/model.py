@@ -1,4 +1,4 @@
-"""A dummy model: one feature `x`, and a threshold above which it predicts 1."""
+"""A better dummy model: one feature `x`, and a threshold above which it predicts 1."""
 
 import csv
 from pathlib import Path
