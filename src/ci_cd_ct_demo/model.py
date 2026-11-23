@@ -18,7 +18,7 @@ def fit(rows: list[tuple[float, int]]) -> float:
 
 
 def predict(threshold: float, x: float) -> int:
-    return 1 if x >= threshold else 0
+    return 1 if x <= threshold else 0
 
 
 def accuracy(threshold: float, rows: list[tuple[float, int]]) -> float:
