@@ -16,12 +16,17 @@ The model and the registry are dummies, so every run takes seconds:
 
 | Workflow | Triggered by | Runs | Slide concept |
 |---|---|---|---|
-| [`ci.yml`](.github/workflows/ci.yml) | a pull request; a push to `main` that changes code | ruff, pytest on code, data and model, `uv build` | CI tests and builds the code |
-| [`cd.yml`](.github/workflows/cd.yml) | CI passing on `main` | downloads the wheel CI built, runs `deploy.py` | CD delivers what CI built |
-| [`ct.yml`](.github/workflows/ct.yml) | new data pushed to `main`; every Monday; the **Run workflow** button | `train.py`, then the gate in `promote.py`, then commits `registry.json` | CT retrains when the data changes |
+| [`ci.yml`](.github/workflows/ci.yml) | a pull request; called by Release | ruff, pytest on code, data and model, `uv build` | CI tests and builds the code |
+| [`release.yml`](.github/workflows/release.yml) | a push to `main` that changes code | CI, then Deploy to `staging`, then Deploy to `production` | CD delivers what CI built |
+| [`ct.yml`](.github/workflows/ct.yml) | new data pushed to `main`; every Monday; the **Run workflow** button | `train.py`, the gate in `promote.py`, a commit of `registry.json`; if the gate promoted, Deploy to `staging`, then `production` | CT retrains when the data changes |
+| [`deploy.yml`](.github/workflows/deploy.yml) | called by Release and CT | `deploy.py` in one environment: a new wheel, or a restart of the running build | the deploy step both share |
+
+Each of Release and CT is one run with one graph, the way production ML
+platforms chain their stages. Production waits for a reviewer in both.
 
 The point to land: a code change goes through CI and CD; a data change goes
-through CT only, and a new `champion` reaches users with no new build.
+through CT, which ends with its own rollout. A new `champion` reaches users
+with no new build.
 
 ## Before class
 
@@ -35,9 +40,10 @@ through CT only, and a new `champion` reaches users with no new build.
       gh repo create ci-cd-ct-demo --private --source . --push
       ```
 - [ ] Open the Actions tab. The first push runs CI, then CD. Check both pass.
-- [ ] Optional: in Settings > Environments > `production`, add yourself as a
-      required reviewer. CD then waits for your approval: the "approved
-      change" of the CD slide.
+- [ ] In Settings > Environments > `production`, add yourself as a required
+      reviewer. Release and CT then wait for your approval before production:
+      the "approved change" of the CD slide. GitHub creates `staging` and
+      `production` on the first run that uses them.
 - [ ] Prepare the two branches below, so nothing is typed under pressure.
       Push them, but don't open the pull requests yet.
       ```bash
@@ -72,9 +78,13 @@ model tests in `tests/test_model.py`; the data and registry tests pass.
 Make any small code change on a branch (a docstring), open a pull request,
 let CI pass, and merge it.
 
-- CI runs again on `main`, then CD starts from CI's result (`workflow_run`).
-- Show the CD log: it deploys the wheel CI built, not a new build, and says
-  the service loads `champion -> v1`.
+- Release runs on `main`. Open its graph: `ci`, then `staging`, then
+  `production`, waiting for your approval.
+- Show the `staging` log: it deploys the wheel `ci` built in the same run, not
+  a new build, and says the service loads `champion -> v1`. Approve
+  `production`: the same wheel goes out.
+- The pull request's CI run and Release are two runs: the merge makes a new
+  commit, and Release tests that commit before shipping it.
 
 ### 3. CT on new data
 
@@ -82,18 +92,22 @@ Open a pull request from `data/new-batch`.
 
 - CI runs the data tests on the new files, as DTU's CML does on a data
   pull request.
-- Merge it. CT starts; CI and CD don't, because `ci.yml` ignores
-  `datasets/**` on `main`.
+- Merge it. CT starts; Release doesn't, because `release.yml` ignores
+  `datasets/**`.
 - Show the CT log: the challenger v2 scores about 0.94 on the new holdout,
   the champion v1 about 0.56. The gate moves `champion` to v2.
 - Show the commit `ct: train a challenger and run the gate` on `main`, and
-  `registry.json` in it. No CD run follows: a new model, no new build. The
-  service would load v2 at its next restart, as in the session on deploying.
+  `registry.json` in it.
+- Open the CT graph: `train-and-gate`, then `staging`, then `production`,
+  waiting for your approval. The `staging` log says "no new build: restarting
+  the running build" and loads `champion -> v2`. Approve `production`: a new
+  model reaches users with no new build.
 
 ### 4. A CT run with nothing new
 
 Click **Run workflow** on CT. It trains v3 on the same data; v3 ties with
-v2, the gain is below `--min-gain 0.02`, and `champion` stays v2.
+v2, the gain is below `--min-gain 0.02`, and `champion` stays v2. The graph
+shows `staging` and `production` skipped: nothing to roll out.
 
 - This is the schedule's weak spot from the triggers slide: it retrains when
   nothing changed, and the gate keeps it from shipping.
