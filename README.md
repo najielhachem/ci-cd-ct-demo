@@ -63,6 +63,30 @@ with no new build.
 
 ## The demo
 
+### 0. The pipeline in the code
+
+Before any run, open the workflow files and show the shape they build:
+
+```text
+PR          CI (lint, tests, build)                      ← check on the PR
+
+Release     ci ──▶ staging ──▶ [approve] ──▶ production   ← one run, same wheel all the way
+(code on main)
+
+CT          train-and-gate ──▶ staging ──▶ [approve] ──▶ production
+(data / cron / button)   │  commits registry.json      no new build: restarts the running build
+                         └─ no promotion → staging and production show as skipped
+```
+
+- [`release.yml`](.github/workflows/release.yml): three jobs, each a `uses:`
+  of another workflow, chained by `needs:`. CI is the first stage of the
+  release, not a separate trigger.
+- [`deploy.yml`](.github/workflows/deploy.yml): one deploy for one
+  `environment`. The required reviewer on `production` is the approval step.
+- [`ct.yml`](.github/workflows/ct.yml): the gate's `promoted` output decides
+  whether `staging` runs, and `new-build: false` deploys the new champion
+  with the build already running.
+
 ### 1. CI on a pull request
 
 Open a pull request from `fix/threshold`. CI runs and fails on the two
