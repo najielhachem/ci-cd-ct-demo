@@ -1,12 +1,10 @@
-# CI: test and build the code on every change to it.
+# CI: lint, test and build the code. It runs on every pull request, and as
+# the first stage of the Release pipeline on main.
 name: CI
 
 on:
   pull_request:
-  push:
-    branches: [main]
-    # A data-only change on main goes to CT, not to CI and CD.
-    paths-ignore: ["datasets/**", "registry.json"]
+  workflow_call:
 
 jobs:
   test-and-build:
