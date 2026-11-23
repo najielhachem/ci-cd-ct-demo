@@ -1,0 +1,23 @@
+# Release: the path of a code change to users, in one run and one graph.
+# CI builds the wheel once; staging and production deploy that same wheel.
+name: Release
+
+on:
+  push:
+    branches: [main]
+    # A data-only change goes to CT, and CT's registry commit is not a release.
+    paths-ignore: ["datasets/**", "registry.json"]
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+  staging:
+    needs: ci
+    uses: ./.github/workflows/deploy.yml
+    with:
+      environment: staging
+  production:
+    needs: staging
+    uses: ./.github/workflows/deploy.yml
+    with:
+      environment: production

@@ -1,0 +1,45 @@
+# Deploy to one environment. Release calls it with a new build; CT calls it
+# with a new champion and the build already running.
+name: Deploy
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+      ref:
+        description: The commit whose registry.json names the champion to serve.
+        type: string
+        default: ""
+      new-build:
+        description: Deploy the wheel built earlier in this run.
+        type: boolean
+        default: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # A required reviewer on the production environment is the approval step.
+    environment: ${{ inputs.environment }}
+    # A release and a CT rollout never deploy to one environment at once.
+    concurrency: deploy-${{ inputs.environment }}
+    env:
+      ENVIRONMENT: ${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+      - uses: astral-sh/setup-uv@v6
+      - name: Download the wheel CI built
+        if: inputs.new-build
+        uses: actions/download-artifact@v4
+        with:
+          name: wheel
+          path: dist
+      - name: Deploy the new build
+        if: inputs.new-build
+        run: uv run scripts/deploy.py --environment "$ENVIRONMENT" --wheel dist/*.whl
+      - name: Roll out the new champion
+        if: ${{ !inputs.new-build }}
+        run: uv run scripts/deploy.py --environment "$ENVIRONMENT"
