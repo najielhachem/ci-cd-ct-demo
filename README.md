@@ -166,6 +166,8 @@ Run [`scripts/reset_demo.sh`](scripts/reset_demo.sh) from a clone of the
 throwaway repository, with `gh` logged in. It brings the repository back to
 the end of "Before class", so the demo can run again:
 
+- Runs still waiting, such as a CT run waiting for production approval, are
+  cancelled.
 - `main` goes back to the tag `demo-start`: `registry.json` holds only v1.
   Release and CT are disabled during that push, or it would start them.
 - `fix/threshold` and `data/new-batch` are recreated on top of it, with the

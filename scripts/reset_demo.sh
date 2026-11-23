@@ -66,8 +66,20 @@ delete_other_branches() {
   done
 }
 
+# A run from the last class may still wait for approval on production, and
+# approving it later would deploy a model the reset registry no longer has.
+cancel_unfinished_runs() {
+  local status run_id
+  for status in waiting queued in_progress; do
+    for run_id in $(gh run list --status "$status" --json databaseId -q '.[].databaseId'); do
+      gh run cancel "$run_id"
+    done
+  done
+}
+
 main() {
   git fetch --quiet --tags origin
+  cancel_unfinished_runs
   reset_main
   recreate_demo_branches
   delete_other_branches
