@@ -162,5 +162,18 @@ shows `staging` and `production` skipped: nothing to roll out.
 
 ## Reset after class
 
-Delete the throwaway repository, or reset `main` to the first commit and
-force-push: `registry.json` then holds only v1 again.
+Run [`scripts/reset_demo.sh`](scripts/reset_demo.sh) from a clone of the
+throwaway repository, with `gh` logged in. It brings the repository back to
+the end of "Before class", so the demo can run again:
+
+- `main` goes back to the tag `demo-start`: `registry.json` holds only v1.
+  Release and CT are disabled during that push, or it would start them.
+- `fix/threshold` and `data/new-batch` are recreated on top of it, with the
+  commands above.
+- Every other branch is deleted.
+- The environments and the reviewer on `production` are GitHub settings, not
+  git, and stay as they are.
+
+The tag is made once, when the repository is created:
+`git tag demo-start && git push origin demo-start`. Move it when the demo
+itself changes.
