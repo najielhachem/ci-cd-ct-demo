@@ -1,0 +1,33 @@
+# CT: retrain when new data lands, on a schedule, or on demand; then run the gate.
+name: CT
+
+on:
+  push:
+    branches: [main]
+    paths: ["datasets/**"]
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+# Two CT runs at once would both edit registry.json.
+concurrency: ct
+
+jobs:
+  train-and-gate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Train a challenger
+        run: uv run scripts/train.py
+      - name: Promotion gate
+        run: uv run scripts/promote.py
+      - name: Save the registry
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add registry.json
+          git commit -m "ct: train a challenger and run the gate"
+          git push

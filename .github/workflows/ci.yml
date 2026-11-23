@@ -1,0 +1,28 @@
+# CI: test and build the code on every change to it.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+    # A data-only change on main goes to CT, not to CI and CD.
+    paths-ignore: ["datasets/**", "registry.json"]
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Install
+        run: uv sync --locked
+      - name: Lint
+        run: uv run ruff check . && uv run ruff format --check .
+      - name: Test code, data and model
+        run: uv run pytest -v
+      - name: Build
+        run: uv build --wheel
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheel
+          path: dist/*.whl
