@@ -149,10 +149,10 @@ shows `staging` and `production` skipped: nothing to roll out.
 ## Pitfalls
 
 - Commits pushed with the workflow's `GITHUB_TOKEN` start no other workflow.
-  That is why CT's registry commit doesn't run CI or CD, and it's GitHub's
+  That is why CT's registry commit doesn't start Release, and it's GitHub's
   rule, not something the workflows set.
-- `workflow_run` and `schedule` only use the workflow files on the default
-  branch, `main`. Editing `cd.yml` on a branch changes nothing until merged.
+- `schedule` only uses the workflow file on the default branch, `main`.
+  Editing CT's cron on a branch changes nothing until merged.
 - Scheduled runs can start late, and GitHub disables them in a repository
   with no activity for 60 days. Use the **Run workflow** button in class.
 - If CT fails on `git push` with a 403, set Settings > Actions > General >
