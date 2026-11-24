@@ -3,10 +3,14 @@
     "1": {
       "threshold": 1.5059,
       "trained_on": "datasets/train.csv"
+    },
+    "2": {
+      "threshold": 3.5261,
+      "trained_on": "datasets/train.csv"
     }
   },
   "aliases": {
-    "challenger": "1",
-    "champion": "1"
+    "challenger": "2",
+    "champion": "2"
   }
 }
